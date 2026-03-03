@@ -52,11 +52,19 @@ function App() {
       canvas.style.width = `${width}px`;
       canvas.style.height = `${height}px`;
 
+      contextInit(canvas)
+
+      recreateHistory()
+
     } else if (canvas.height / 2 != initCanvasHeight) {
       canvas.width = width * 2;
       canvas.height = height * 2;
       canvas.style.width = `${width}px`;
       canvas.style.height = `${height}px`;
+
+      contextInit(canvas)
+
+      recreateHistory()
     }
   }, [])
 
@@ -74,6 +82,10 @@ function App() {
     canvas.style.width = `${width}px`;
     canvas.style.height = `${height}px`;
 
+    contextInit(canvas)
+  }
+
+  const contextInit = (canvas: any) => {
     const context = canvas.getContext("2d");
     context.scale(2, 2);
     context.lineCap = "round";
