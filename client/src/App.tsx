@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 const widthMultiplier = 1.33333333333333;
 const initCanvasHeight = 450;
 const initCanvasWidth = initCanvasHeight * widthMultiplier;
+let drawingHistory: { offSetX: number, offSetY: number, color: string, lineWidth: number }[] = []
 
 function App() {
   const canvasRef = useRef(null);
@@ -51,7 +52,7 @@ function App() {
       canvas.style.width = `${width}px`;
       canvas.style.height = `${height}px`;
 
-    } else if (canvas.height/2 != initCanvasHeight) {
+    } else if (canvas.height / 2 != initCanvasHeight) {
       canvas.width = width * 2;
       canvas.height = height * 2;
       canvas.style.width = `${width}px`;
@@ -86,8 +87,15 @@ function App() {
     contextRef.current.strokeStyle = color;
   }, [color, lineWidth])
 
+
+  const updateDrawingHistory = (offSetX: number, offSetY: number) => {
+    drawingHistory.push({ offSetX, offSetY, color, lineWidth })
+  }
+
   const startDrawing = ({ nativeEvent }) => {
     const { offsetX, offsetY } = nativeEvent;
+    // console.log("Down", { offsetX, offsetY })
+    updateDrawingHistory(offsetX, offsetY)
     contextRef.current.beginPath();
     contextRef.current.moveTo(offsetX, offsetY);
     contextRef.current.lineTo(offsetX, offsetY);
@@ -95,17 +103,55 @@ function App() {
     setIsDrawing(true);
   };
 
+  const draw = ({ nativeEvent }) => {
+    if (!isDrawing) return;
+    const { offsetX, offsetY } = nativeEvent;
+    updateDrawingHistory(offsetX, offsetY)
+    // console.log({ offsetX, offsetY })
+    contextRef.current.lineTo(offsetX, offsetY);
+    contextRef.current.stroke();
+  };
+
+  const showHistory = () => {
+    console.log(drawingHistory)
+  }
+
+  const resetHistory = () => {
+    drawingHistory = []
+  }
+
+  const recreateHistory = () => {
+    if (!drawingHistory[0]) return
+    contextRef.current.beginPath();
+    contextRef.current.moveTo(drawingHistory[0].offSetX, drawingHistory[0].offSetY);
+    drawingHistory.map((history, ind) => {
+
+      if (history.offSetX === -1 && drawingHistory[ind + 1]?.offSetX) {
+        contextRef.current.closePath();
+        contextRef.current.beginPath();
+        contextRef.current.moveTo(drawingHistory[ind + 1].offSetX, drawingHistory[ind + 1].offSetY);
+
+      } else if (!(history.offSetX === -1)) {
+        contextRef.current.lineWidth = history.lineWidth;
+        contextRef.current.strokeStyle = history.color;
+        contextRef.current.lineTo(history.offSetX, history.offSetY);
+        contextRef.current.stroke();
+      }
+    })
+  }
+
   const finishDrawing = () => {
     contextRef.current.closePath();
+    updateDrawingHistory(-1, -1)
     setIsDrawing(false);
   };
 
-  const colorChange = (value: string) => {
+  const changeColor = (value: string) => {
     if (value === color) return;
     setColor(value);
   }
 
-  const lineWidthChange = (value: string) => {
+  const changeLineWidth = (value: string | number) => {
     const valueInt = Number(value)
     if (valueInt === lineWidth || valueInt < 1 || valueInt > 50) return;
     setLineWidth(valueInt);
@@ -116,12 +162,6 @@ function App() {
     canvasInit()
   }
 
-  const draw = ({ nativeEvent }) => {
-    if (!isDrawing) return;
-    const { offsetX, offsetY } = nativeEvent;
-    contextRef.current.lineTo(offsetX, offsetY);
-    contextRef.current.stroke();
-  };
   return (
     <div>
       <canvas
@@ -136,17 +176,23 @@ function App() {
       <div className='flex m-4'>
         {
           colors.map((val) => {
-            return (<div key={val} className={`w-7 h-7 mr-1.5 cursor-pointer ${color === val ? 'border-4' : ''}`} style={{ backgroundColor: val }} onClick={() => colorChange(val)} />)
+            return (<div key={val} className={`w-7 h-7 mr-1.5 cursor-pointer ${color === val ? 'border-4' : ''}`} style={{ backgroundColor: val }} onClick={() => changeColor(val)} />)
           })
         }
       </div>
 
       {/* Line width selection */}
       <div>
-        <input type='range' min={1} max={50} className='w-[600px]' value={lineWidth} onChange={(e) => lineWidthChange(e.target.value)} /> {lineWidth}
+        <input type='range' min={1} max={50} className='w-[600px]' value={lineWidth} onChange={(e) => changeLineWidth(e.target.value)} /> {lineWidth}
       </div>
 
-      <button onClick={clearAll}>Clear All</button>
+      <button className='border bg-amber-200 p-2 cursor-pointer shadow-xl shadow-black' onClick={clearAll}>Clear All</button>
+
+      <button className='border bg-amber-200 p-2 cursor-pointer shadow-xl shadow-black' onClick={showHistory}>Show History</button>
+
+      <button className='border bg-amber-200 p-2 cursor-pointer shadow-xl shadow-black' onClick={recreateHistory}>Recreate History</button>
+
+      <button className='border bg-amber-200 p-2 cursor-pointer shadow-xl shadow-black' onClick={resetHistory}>Reset History</button>
 
     </div>
   )
