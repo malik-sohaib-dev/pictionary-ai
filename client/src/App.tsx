@@ -102,6 +102,7 @@ function App() {
     const context = canvas.getContext("2d");
     context.scale(2, 2);
     context.lineCap = "round";
+    context.lineJoin = "bevel"
     context.strokeStyle = color;
     context.lineWidth = lineWidth;
     contextRef.current = context;
@@ -162,7 +163,6 @@ function App() {
 
     drawingHistory.map((history, ind) => {
       if (history.offSetXTransformed === -1 && drawingHistory[ind + 1]?.offSetXTransformed) {
-        contextRef.current.closePath();
         contextRef.current.beginPath();
         contextRef.current.moveTo(drawingHistory[ind + 1].offSetXTransformed * w, drawingHistory[ind + 1].offSetYTransformed * h);
 
@@ -173,12 +173,9 @@ function App() {
         contextRef.current.stroke();
       }
     })
-
-    contextRef.current.closePath();
   }
 
   const finishDrawing = () => {
-    contextRef.current.closePath();
     updateDrawingHistory(-1, -1)
     setIsDrawing(false);
   };
