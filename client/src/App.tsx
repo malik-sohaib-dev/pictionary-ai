@@ -173,6 +173,8 @@ function App() {
         contextRef.current.stroke();
       }
     })
+
+    contextRef.current.closePath();
   }
 
   const finishDrawing = () => {
