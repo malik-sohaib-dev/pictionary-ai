@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 const widthMultiplier = 1.33333333333333;
 const initCanvasHeight = 450;
 const initCanvasWidth = initCanvasHeight * widthMultiplier;
-let drawingHistory: { offSetX: number, offSetY: number, color: string, lineWidth: number }[] = []
+let drawingHistory: { offSetXTransformed: number, offSetYTransformed: number, color: string, lineWidthTransformed: number }[] = []
 
 function App() {
   const canvasRef = useRef(null);
@@ -37,6 +37,19 @@ function App() {
       window.removeEventListener("resize", windowResize)
     }
   });
+
+  const getCanvasDimensions = () => {
+    const canvas = canvasRef.current
+
+    let w = initCanvasWidth
+    let h = initCanvasHeight
+    if (!canvas) return { w, h }
+
+    w = canvas.offsetWidth || initCanvasWidth
+    h = canvas.offsetHeight || initCanvasHeight
+
+    return { w, h }
+  }
 
 
   const windowResize = useCallback(() => {
@@ -99,11 +112,6 @@ function App() {
     contextRef.current.strokeStyle = color;
   }, [color, lineWidth])
 
-
-  const updateDrawingHistory = (offSetX: number, offSetY: number) => {
-    drawingHistory.push({ offSetX, offSetY, color, lineWidth })
-  }
-
   const startDrawing = ({ nativeEvent }) => {
     const { offsetX, offsetY } = nativeEvent;
     // console.log("Down", { offsetX, offsetY })
@@ -128,25 +136,40 @@ function App() {
     console.log(drawingHistory)
   }
 
+  const updateDrawingHistory = (offSetX: number, offSetY: number) => {
+
+    let { w, h } = getCanvasDimensions();
+
+    if (offSetX === -1) {
+      drawingHistory.push({ offSetXTransformed: offSetX, offSetYTransformed: offSetY, color, lineWidthTransformed: lineWidth })
+    } else {
+      drawingHistory.push({ offSetXTransformed: offSetX / w, offSetYTransformed: offSetY / h, color, lineWidthTransformed: lineWidth / w })
+    }
+  }
+
   const resetHistory = () => {
     drawingHistory = []
   }
 
   const recreateHistory = () => {
     if (!drawingHistory[0]) return
-    contextRef.current.beginPath();
-    contextRef.current.moveTo(drawingHistory[0].offSetX, drawingHistory[0].offSetY);
-    drawingHistory.map((history, ind) => {
 
-      if (history.offSetX === -1 && drawingHistory[ind + 1]?.offSetX) {
+    const { w, h } = getCanvasDimensions();
+
+    contextRef.current.beginPath();
+    contextRef.current.moveTo(drawingHistory[0].offSetXTransformed * w, drawingHistory[0].offSetYTransformed * h);
+
+
+    drawingHistory.map((history, ind) => {
+      if (history.offSetXTransformed === -1 && drawingHistory[ind + 1]?.offSetXTransformed) {
         contextRef.current.closePath();
         contextRef.current.beginPath();
-        contextRef.current.moveTo(drawingHistory[ind + 1].offSetX, drawingHistory[ind + 1].offSetY);
+        contextRef.current.moveTo(drawingHistory[ind + 1].offSetXTransformed * w, drawingHistory[ind + 1].offSetYTransformed * h);
 
-      } else if (!(history.offSetX === -1)) {
-        contextRef.current.lineWidth = history.lineWidth;
+      } else if (!(history.offSetXTransformed === -1)) {
+        contextRef.current.lineWidth = history.lineWidthTransformed * w;
         contextRef.current.strokeStyle = history.color;
-        contextRef.current.lineTo(history.offSetX, history.offSetY);
+        contextRef.current.lineTo(history.offSetXTransformed * w, history.offSetYTransformed * h);
         contextRef.current.stroke();
       }
     })
