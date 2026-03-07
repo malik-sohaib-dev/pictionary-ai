@@ -9,9 +9,9 @@ import (
 
 type RoomRepository interface {
 	Create(room types.Room) error
-	GetAll() (map[string]types.Room, error)
+	GetAll() ([]types.Room, error)
 	GetById(id string) (types.Room, error)
-	PutById(id string, room types.Room) (types.Room, error)
+	UpdateById(id string, room types.Room) (types.Room, error)
 }
 
 type RoomRepo struct {
