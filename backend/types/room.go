@@ -31,6 +31,10 @@ type CreateRoom struct {
 	Owner      string            `json:"owner"`
 }
 
+type CreateRoomResponse struct {
+	RoomId string `json:"roomId"`
+}
+
 type PatchRoom struct {
 	Visibility      *AllowedVisibility `json:"visibility,omitempty"`
 	Owner           *string            `json:"owner,omitempty"`
