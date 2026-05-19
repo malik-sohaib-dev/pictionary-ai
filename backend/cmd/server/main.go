@@ -16,11 +16,16 @@ func main() {
 
 	roomHandler := handlers.NewRoomHandler(roomService)
 
+	socketHandler := handlers.NewSocketHandler()
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/rooms", roomHandler.GetAll)
 	mux.HandleFunc("POST /api/rooms", roomHandler.Create)
 	mux.HandleFunc("PATCH /api/rooms/{id}", roomHandler.Patch)
 	mux.HandleFunc("GET /api/rooms/{id}", roomHandler.GetById)
+
+	// Websocket 
+	mux.HandleFunc("GET /ws", socketHandler.EchoHandler)
 
 	fmt.Println("Listening on port 8080")
 
